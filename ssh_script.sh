@@ -10,24 +10,28 @@ alias ssh='function _ssh2() {
     local labkeys_dir="/home/cattail/labkeys"
 
     # Ensure the labkeys directory exists
-    mkdir -p "$labkeys_dir" || { echo "Failed to create labkeys directory"; return 1; };
-    echo "Directory $labkeys_dir has been created or already exists.";
+    mkdir -p "$labkeys_dir" || { echo "Failed to create labkeys directory"; return 1; }
 
     # Check if the key file is in the Downloads directory
     if [ -f "$downloads_dir/$key_file" ]; then
-        echo "Found $key_file in Downloads directory. Moving to labkeys...";
-        mv "$downloads_dir/$key_file" "$labkeys_dir/" || { echo "Failed to move $key_file"; return 1; };
-    fi;
+        echo "Found $key_file in Downloads directory. Moving to labkeys..."
+        mv "$downloads_dir/$key_file" "$labkeys_dir/" || { echo "Failed to move $key_file"; return 1; }
+    fi
 
     # Verify the key file exists in the labkeys directory
     if [ ! -f "$labkeys_dir/$key_file" ]; then
-        echo "$key_file not found in labkeys directory.";
-        return 1;
-    fi;
+        echo "$key_file not found in labkeys directory."
+        return 1
+    fi
 
-    # Set permissions for the key file and directory
-    chmod 700 "$labkeys_dir" && echo "Permissions for $labkeys_dir set to 700";
-    chmod 400 "$labkeys_dir/$key_file" && echo "Permissions for $key_file set to 400";
+    # Set permissions and attempt SSH
+    chmod 400 "$labkeys_dir/$key_file" && echo "Permissions for $key_file set to 400"
+    /usr/bin/ssh -i "$labkeys_dir/$key_file" ec2-user@"$ip_address" || {
+        echo "SSH connection failed"
+        rm -f "$labkeys_dir/$key_file"
+        return 1
+    }
 
-    # Add host to known_hosts to avoid authenticity prompt
-
+    # Cleanup key file upon exiting
+    rm -f "$labkeys_dir/$key_file"
+}; _ssh2'
